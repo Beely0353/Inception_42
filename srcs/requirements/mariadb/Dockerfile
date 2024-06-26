@@ -1,0 +1,12 @@
+FROM		debian:bullseye
+
+RUN			apt update -y && apt upgrade -y && apt install -y mariadb-server
+
+COPY        conf/50-server.cnf /etc/mysql/mariadb.conf.d/
+
+COPY        tools/auto_config.sh /usr/local/bin/
+RUN         chmod +x /usr/local/bin/auto_config.sh
+
+EXPOSE      3306
+
+ENTRYPOINT  ["/usr/local/bin/auto_config.sh"]
