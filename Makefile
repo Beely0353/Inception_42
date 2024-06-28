@@ -14,8 +14,14 @@ status :
 	@docker ps
 	@echo "\n\033[1;32mNETWORK:\033[0m"
 	@docker network ls
+	@echo "\n\033[1;32mIMAGES:\033[0m"
+	@docker images
+
+clear :
+	@docker system prune -a --volumes
 
 clean :
 	@docker stop $$(docker ps -qa)
 	@docker rm $$(docker ps -qa)
-	@docker network prune -f 
+	@docker network prune -f
+	@docker rmi $(docker images -q)
