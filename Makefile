@@ -19,6 +19,7 @@ status :
 
 clear :
 	@docker system prune -a --volumes
+	@docker volume rm $(docker volume ls -q)
 
 clean :
 	@docker stop $$(docker ps -qa)
