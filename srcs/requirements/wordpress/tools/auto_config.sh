@@ -1,35 +1,28 @@
-#!/bin/sh
+#!/bin/bash
 
-sleep 10
-if [ -f ./wp-config.php ]
-then
-	echo "wordpress already downloaded"
-else
 
-# Créer le fichier de configuration wp-config.php
-wp config create	--allow-root \
-					--dbname=$db_name \
-					--dbuser=$db_user \
-					--dbpass=$db_pwd \
-					--dbhost=mariadb:3306 --path='/var/www/wordpress'
+cp /var/www/wordpress/wp-config-sample.php /var/www/wordpress/wp-config.php
 
-    # Installer WordPress
-wp core install     --allow-root \
-                    --url=$WP_URL \
-                    --title="$WP_TITLE" \
-                    --admin_user=$WP_ADMIN_USER \
-                    --admin_password=$WP_ADMIN_PASSWORD \
-                    --admin_email=$WP_ADMIN_EMAIL --path='/var/www/wordpress'
-
-# Créer un utilisateur non administrateur
-wp user create $WP_USR $WP_EMAIL --role=author --user_pass=$WP_PWD --allow-root
-
- # Créer un administrateur sans utiliser 'admin' ou 'administrator' dans le nom d'utilisateur
-wp user create $WP_admin $WP_admin_email --role=administrator --user_pass=$WP_admin_pwd --allow-root
-
-echo "WordPress has been set up with two users."
+if [ -n "$DB_NAME" ]; then
+	sed -i "s|define( 'DB_NAME', 'votre_nom_de_bdd' );|define( 'DB_NAME', '$DB_NAME' );|" /var/www/wordpress/wp-config.php
+	if [ -n "$DB_USER" ]; then
+		sed -i "s|define( 'DB_USER', 'votre_utilisateur_de_bdd' );|define( 'DB_USER', '$DB_USER' );|" /var/www/wordpress/wp-config.php
+		if [ -n "$DB_PASSWORD" ]; then
+    		sed -i "s|define( 'DB_PASSWORD', 'votre_mdp_de_bdd' );|define( 'DB_PASSWORD', '$DB_PASSWORD' );|" /var/www/wordpress/wp-config.php
+		fi
+	fi
 fi
 
-if [ ! -d /run/php ]; then
-    mkdir -p /run/php
-fi
+sed -i "s/define( 'DB_HOST', 'localhost' );/define( 'DB_HOST', 'mariadb' );/" /var/www/wordpress/wp-config.php
+
+until wp db check --allow-root --path=/var/www/wordpress; do
+    sleep 5
+    echo "Retrying..."
+done
+
+wp core install --allow-root --path=$WP_PATHWORDPRESS --url=$DOMAIN --title=$WP_TITLE --admin_user=$WP_ADMINUSER --admin_password=$WP_ADMINPASSWORD --admin_email=$WP_ADMINEMAIL
+
+wp user create --allow-root $WP_USER $WP_USEREMAIL --path=$WP_PATHWORDPRESS --role=$WP_ROLE --user_pass=$WP_USERPASSWORD --display_name=$WP_DISPLAYNAME
+
+
+usr/sbin/php-fpm7.3 -F

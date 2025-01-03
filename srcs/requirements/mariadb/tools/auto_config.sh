@@ -1,16 +1,34 @@
 #!/bin/bash
 
+chown -R mysql:mysql /var/lib/mysql
 
-service mariadb start
+mysql_install_db --user=mysql --datadir=/var/lib/mysql >> /dev/null
 
-echo "CREATE DATABASE IF NOT EXISTS $db_name ;" > db1.sql
-echo "CREATE USER IF NOT EXISTS '$db_user'@'%' IDENTIFIED BY '$db_pwd' ;" >> db1.sql
-echo "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user'@'%' ;" >> db1.sql
-echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '12345' ;" >> db1.sql
-echo "FLUSH PRIVILEGES;" >> db1.sql
+/usr/bin/mysqld_safe --datadir=/var/lib/mysql &
 
-mysql < db1.sql
+while true; do
+    if /usr/bin/mysqladmin ping --silent; then
+        echo "MySQL is online baby"
+        break
+    fi
+    sleep 1
+done
 
-kill $(cat /var/run/mysqld/mysqld.pid)
 
-mysqld
+if [ -n "$DB_NAME" ]; then
+    echo "Checking if $DB_NAME already exists..."
+    mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
+    if [ -n "$DB_USER" ] && [ -n "$DB_PASSWORD" ]; then
+        echo "Checking if $DB_USER already exists..."
+        mysql -u root -e "CREATE USER IF NOT EXISTS \`${DB_USER}\`@'localhost' IDENTIFIED BY '${DB_PASSWORD}';"
+        echo "Giving to $DB_USER privileges from $DB_NAME"
+        mysql -u root -e "GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';"
+        echo "Refreshing settings...changements will take effect..."
+        mysql -u root -e "FLUSH PRIVILEGES;"
+    fi
+fi
+
+mysqladmin shutdown
+
+/usr/bin/mysqld_safe --datadir=/var/lib/mysql
+
