@@ -17,4 +17,6 @@ RUN			wget https://fr.wordpress.org/wordpress-6.0-fr_FR.tar.gz -P /var/www && \
 COPY 		/tools/auto_config.sh /etc/conf/
 COPY 		/conf/www.conf /etc/php/7.4/fpm/pool.d/www.conf
 
+RUN 		chmod +x /etc/conf/auto_config.sh
+
 CMD 		["sh", "/etc/conf/auto_config.sh"]
